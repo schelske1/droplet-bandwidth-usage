@@ -17,18 +17,37 @@ If usage crosses a configurable threshold (default **950 GiB**), the script exit
 
 ## 🖥️ Prerequisites
 
-| Requirement                                             | Why it’s needed          |
-| ------------------------------------------------------- | ------------------------ |
-| Bash 4+                                                 | Script language          |
-| `curl`                                                  | HTTP requests            |
-| `jq`                                                    | JSON parsing             |
-| `awk`, `bc`                                             | Math / unit conversion   |
-| GNU `date`                                              | ISO timestamps           |
-| DigitalOcean **Personal Access Token** → `DO_API_TOKEN` | Auth for API calls       |
-| The Droplet’s **numeric ID** → `DROPLET_ID`             | Tells the API which host |
+| Requirement | Why it’s needed |
+|-------------|-----------------|
+| Bash 4+     | Script language |
+| `curl`      | HTTP requests   |
+| `jq`        | JSON parsing    |
+| `awk`, `bc` | Math / unit conversion |
+| GNU `date`  | ISO timestamps  |
+| DigitalOcean **Personal Access Token** → `DO_API_TOKEN` | Auth for API calls |
+| The Droplet’s **numeric ID** → `DROPLET_ID` | Tells the API which host |
+| **DigitalOcean Monitoring enabled** (metrics agent installed) | Provides bandwidth metrics |
 
 > **macOS tip** – install missing CLI tools with Homebrew:
 > `brew install jq coreutils gnu-sed gawk bc`
+
+---
+
+## 📈 Enable DigitalOcean Monitoring (install the metrics agent)
+To enable monitoring when creating a new Droplet, simply check the “Monitoring” option in the Control Panel or add --monitoring to your doctl compute droplet create command. Monitoring will be active from first boot.
+
+To enable monitoring on an existing Droplet:
+
+   ```bash
+   # SSH into the Droplet as root or a sudo-capable user
+   ssh root@your_droplet_ip
+   
+   # Install or upgrade the DigitalOcean metrics agent
+   curl -sSL https://repos.insights.digitalocean.com/install.sh | sudo bash
+   
+   # Verify the agent is running
+   systemctl status do-agent
+   ```
 
 ---
 

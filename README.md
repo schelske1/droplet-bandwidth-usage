@@ -165,6 +165,7 @@ Add *that* script to cron instead, or replace the PM2 commands with power-off, s
 * **`Missing DO_API_TOKEN`** – token not exported in the current shell.
 * **`Failed to retrieve or parse bandwidth data.`** – metric stream may not exist yet (new Droplet) or the API returned an error; inspect with `curl -i`.
 * **Unexpected threshold trips** – remember the script measures **rolling 30 days**, not calendar month quotas.
+* **Script not found when run by cron** – make sure the script is placed in a directory that's in your system's `PATH`, such as `/usr/local/bin`, and that it has executable permissions (`chmod +x`).
 
 ---
 

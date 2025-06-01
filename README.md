@@ -15,6 +15,16 @@ If usage crosses a configurable threshold (default **950 GiB**), the script exit
 
 ---
 
+## 📂 Script Overview
+
+- **`check-do-outbound-bandwidth.sh`**  
+  Queries the DigitalOcean API to check outbound bandwidth usage. Exits with code `2` if usage exceeds a defined threshold.
+
+- **`shutdown-if-over-bandwidth.sh`**  
+  Wrapper script that runs `check-do-outbound-bandwidth.sh` and, if exit code `2` is returned, executes custom logic to shut down services or send alerts.
+
+---
+
 ## 🖥️ Prerequisites
 
 | Requirement | Why it’s needed |
@@ -55,11 +65,19 @@ To enable monitoring on an existing Droplet:
 
 1. Sign in to the [DigitalOcean Control Panel](https://cloud.digitalocean.com/account/api/tokens).
 2. **Generate New Token** → give it a name → *uncheck* **Write** (read-only is enough) → **Create Token**.
-3. Copy the token **once** and export it:
-
-   ```bash
-   export DO_API_TOKEN="YOUR_API_TOKEN"
-   ```
+3. Set up the file that the script will use to load your API token:
+      ```bash
+      mkdir -p ~/.config/cron-secrets
+      nano ~/.config/cron-secrets/env
+      ```
+4. Paste your API token into the file:
+      ```
+      DO_API_TOKEN="your_token_here"
+      ```
+5. Secure the file so only your user can read it:
+      ```bash
+      chmod 600 ~/.config/cron-secrets/env
+      ```
 
 ---
 
@@ -72,24 +90,21 @@ To enable monitoring on an existing Droplet:
   doctl compute droplet list --output json | jq -r '.[] | "\(.id)\t\(.name)"'
   ```
 
-Then:
-
-```bash
-export DROPLET_ID="YOUR_DROPLET_ID"
-```
-
 ---
 
 ## ⚙️ Configuration
 
-Inside **`check-do-outbound-bandwidth.sh`**:
+Inside **`check-do-outbound-bandwidth.sh`**, update the configuration section:
 
 ```bash
-# User-tweakable values
-INTERFACE="public"      # or "private"
-DIRECTION="outbound"    # or "inbound"
-THRESHOLD_GIB=950       # change to taste (e.g. 900)
-LOG_FILE="$HOME/do_bandwidth.log"
+# === CONFIGURATION ===
+: "${HOME:=/home/<YOUR_USER_NAME>}" # TODO (1): Provide your user name
+
+DROPLET_ID="$DROPLET_ID" # TODO (2): Provide your Droplet ID
+INTERFACE="public"
+DIRECTION="outbound"
+THRESHOLD_GIB=950 # TODO (3): Update to accurate threshold for your Droplet
+LOG_FILE="$HOME/logs/do_bandwidth.log"
 ```
 
 ---
@@ -128,44 +143,21 @@ Found result index: 0
 
 ## ⏰ Automating with Cron
 
-Run every hour at **HH:05** UTC (adjust as needed):
-
-```cron
-5 * * * * /usr/local/bin/check-do-outbound-bandwidth.sh
+```bash
+chmod +x shutdown-if-over-bandwidth.sh
 ```
 
----
+Respond to exit code 2 in the wrapper script (shutdown-if-over-bandwidth.sh) with shutdowns, alerts, or other custom actions.
 
-## 🔌 Example: Auto-Shutdown with PM2
-
-`/usr/local/bin/pm2-bandwidth-guard.sh`
+Set the script to run once every hour, at minute 0 (i.e., the top of the hour), and log its output:
 
 ```bash
-#!/bin/bash
-/usr/local/bin/check-do-outbound-bandwidth.sh
-EXIT_CODE=$?
-
-if [[ "$EXIT_CODE" -eq 2 ]]; then
-  TS="$(date)"
-  echo "$TS: Exit code 2 — stopping and clearing all PM2 apps." | tee -a /var/log/pm2-monitor.log
-
-  pm2 delete all        # stop & remove apps
-  pm2 save --force      # persist empty state
-else
-  echo "$(date): Exit code $EXIT_CODE — no action taken." | tee -a /var/log/pm2-monitor.log
-fi
+crontab -e
 ```
 
-Add *that* script to cron instead, or replace the PM2 commands with power-off, snapshot, PagerDuty alert, etc.
-
----
-
-## 📝 Troubleshooting
-
-* **`Missing DO_API_TOKEN`** – token not exported in the current shell.
-* **`Failed to retrieve or parse bandwidth data.`** – metric stream may not exist yet (new Droplet) or the API returned an error; inspect with `curl -i`.
-* **Unexpected threshold trips** – remember the script measures **rolling 30 days**, not calendar month quotas.
-* **Script not found when run by cron** – make sure the script is placed in a directory that's in your system's `PATH`, such as `/usr/local/bin`, and that it has executable permissions (`chmod +x`).
+```cron
+0 * * * * /usr/local/bin/shutdown-if-over-bandwidth.sh >> /var/log/pm2-bandwidth-shutdown.log 2>&1
+```
 
 ---
 

@@ -21,8 +21,7 @@ If usage crosses a configurable threshold (default **950 GiB**), the script exit
   Queries the DigitalOcean API to check outbound bandwidth usage. Exits with code `2` if usage exceeds a defined threshold.
 
 - **`shutdown-if-over-bandwidth.sh`**  
-  Wrapper script that runs `check-do-outbound-bandwidth.sh` and, if exit code `2` is returned, executes custom logic to shut down services or send alerts.
-  ✅ **This is the script to call from your cron job.**
+  Wrapper script that runs `check-do-outbound-bandwidth.sh` and, if exit code `2` is returned, executes custom logic to shut down services or send alerts. **This is the script to call from your cron job.**
 
 ---
 

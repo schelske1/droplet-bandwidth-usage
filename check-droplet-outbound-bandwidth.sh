@@ -1,11 +1,18 @@
 #!/bin/bash
 
 # === CONFIGURATION ===
-DROPLET_ID="$DROPLET_ID"
+: "${HOME:=/home/<YOUR_USER_NAME>}" # TODO (1): Provide your user name
+
+DROPLET_ID="$DROPLET_ID" # TODO (2): Provide your Droplet ID
 INTERFACE="public"
 DIRECTION="outbound"
-THRESHOLD_GIB=950
-LOG_FILE="$HOME/do_bandwidth.log"
+THRESHOLD_GIB=950 # TODO (3): Update to accurate threshold for your Droplet
+LOG_FILE="$HOME/logs/do_bandwidth.log"
+
+# === LOAD SECRETS SECURELY ===
+set -a
+source "$HOME/.config/cron-secrets/env" # TODO (4): Create ~/.config/cron-secrets/env, add your DO API token
+set +a
 
 # === Validate API Token ===
 if [[ -z "$DO_API_TOKEN" ]]; then
